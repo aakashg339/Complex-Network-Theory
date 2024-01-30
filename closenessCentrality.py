@@ -255,14 +255,39 @@ class CentralityMeasuresAndPageRank:
         # initial page rank
         initialPageRank = pd.DataFrame(index=self.vertexList, columns=['pageRank'])
         initialPageRank.fillna(1 / self.numberOfNodes, inplace=True)
+        initialPageRank = initialPageRank.round(6)
 
-        # page rank
+        # page rank.
+        pageRank = pd.DataFrame(index=self.vertexList, columns=['pageRank'])
+        pageRank.fillna(0, inplace=True)
         pageRank = initialPageRank.copy()
-        for i in range(50):
+
+        
+        # # power iteration method
+        # while True:
+        #     pageRank = initialPageRank.copy()
+        #     pageRank = matrixM.dot(pageRank)
+        #     pageRank = pageRank.round(6)
+        #     if pageRank.equals(initialPageRank):
+        #         break
+        #     initialPageRank = pageRank.copy()
+
+        # power iteration method
+        for i in range(20):
             print("Iteration " + str(i + 1))
             pageRank = matrixM.dot(pageRank)
+
+        pageRank = pageRank.round(6)
         
         print(pageRank)
+        
+        # Creating mapping of node id with page rank
+        pageRankMapping = {}
+        for index, row in pageRank.iterrows():
+            pageRankMapping[index] = row['pageRank']
+        
+        # writing result to file
+        self.writeResultToFile(pageRankMapping, "pageRank.txt")
 
     # Function to write result to file
     def writeResultToFile(self, result, fileName):
@@ -283,9 +308,9 @@ if __name__ == "__main__":
         # print()
     # print(centralityMeasuresAndPageRank.allPairPathsData)
     # centralityMeasuresAndPageRank.closenessCentralityMeasure()
-    centralityMeasuresAndPageRank.betweennessCentralityMeasure()
-    # centralityMeasuresAndPageRank.degreeOfNode()
-    # centralityMeasuresAndPageRank.pageRank()
+    # centralityMeasuresAndPageRank.betweennessCentralityMeasure()
+    centralityMeasuresAndPageRank.degreeOfNode()
+    centralityMeasuresAndPageRank.pageRank()
     
 
 
