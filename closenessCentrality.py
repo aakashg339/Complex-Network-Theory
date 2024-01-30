@@ -53,11 +53,15 @@ class CentralityMeasuresAndPageRank:
 
     def degreeOfNode(self):
         for node in self.vertexList:
-            self.outDegreeOfNodes[node] = len(self.adjacencyList[node])
+            if node in self.adjacencyList:
+                self.outDegreeOfNodes[node] = len(self.adjacencyList[node])
+            else:
+                self.outDegreeOfNodes[node] = 0
             self.inDegreeOfNodes[node] = 0
         for node in self.vertexList:
-            for destination in self.adjacencyList[node]:
-                self.inDegreeOfNodes[destination] += 1
+            if node in self.adjacencyList:
+                for destination in self.adjacencyList[node]:
+                    self.inDegreeOfNodes[destination] += 1
         # print(self.outDegreeOfNodes)
         # print(self.inDegreeOfNodes)
     
@@ -194,7 +198,7 @@ class CentralityMeasuresAndPageRank:
         self.betweennessCentrality = {}
         pairsCompleted = []
         for node in self.vertexList:
-            pairsCompleted = []
+            pairsCompleted = set()
             self.betweennessCentrality[node] = 0
             for source in self.vertexList:
                 if source == node:
@@ -208,11 +212,15 @@ class CentralityMeasuresAndPageRank:
                         if node in path:
                             shortestPathsIncludingNode += 1
                     self.betweennessCentrality[node] += shortestPathsIncludingNode / self.allPairPathsData[source][destination]['numberOfPaths']
-                    pairsCompleted.append((source, destination))
-                    pairsCompleted.append((destination, source))
-            self.betweennessCentrality[node] /= ((self.numberOfNodes - 1) * (self.numberOfNodes - 2))
-            print(node + " = " + str(self.betweennessCentrality[node]))
+                    pairsCompleted.add((source, destination))
+                    pairsCompleted.add((destination, source))
+            print(str(node) + " = " + str(self.betweennessCentrality[node]))
+
+        # Normalize the betweenness centrality
+        for node in self.betweennessCentrality:
+            self.betweennessCentrality[node] = self.betweennessCentrality[node] / ((self.numberOfNodes - 1) * (self.numberOfNodes - 2))
         
+
         # writing result to file
         self.writeResultToFile(self.betweennessCentrality, "betweennessCentrality.txt")
         print("completed betweenness centrality")
@@ -228,8 +236,10 @@ class CentralityMeasuresAndPageRank:
         for src in self.vertexList:
             # Number of edges going from node i to node j / Number of edges going from node i
             # Number of edges going from node i to node j
-            for dest in self.adjacencyList[src]:
-                transformationMatrix.at[src, dest] = 1 / self.outDegreeOfNodes[dest]
+            if src in self.adjacencyList:
+                for dest in self.adjacencyList[src]:
+                    if self.outDegreeOfNodes[dest] != 0:
+                        transformationMatrix.at[src, dest] = 1 / self.outDegreeOfNodes[dest]
         
         # teleportation probability
         alpha = 0.8
@@ -248,7 +258,7 @@ class CentralityMeasuresAndPageRank:
 
         # page rank
         pageRank = initialPageRank.copy()
-        for i in range(20):
+        for i in range(50):
             print("Iteration " + str(i + 1))
             pageRank = matrixM.dot(pageRank)
         
@@ -272,9 +282,9 @@ if __name__ == "__main__":
         centralityMeasuresAndPageRank.shortestPathsFromSourceToDestination(node)
         # print()
     # print(centralityMeasuresAndPageRank.allPairPathsData)
-    centralityMeasuresAndPageRank.closenessCentralityMeasure()
+    # centralityMeasuresAndPageRank.closenessCentralityMeasure()
     centralityMeasuresAndPageRank.betweennessCentralityMeasure()
-    centralityMeasuresAndPageRank.degreeOfNode()
+    # centralityMeasuresAndPageRank.degreeOfNode()
     # centralityMeasuresAndPageRank.pageRank()
     
 
