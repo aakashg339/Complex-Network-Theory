@@ -38,3 +38,56 @@ The working of the driver.c is explained in the steps below.
 ## Purpose
 
 The project was used to understand the usage of threads.
+
+
+    
+    # Calculating all pair shortest path with path length, number of shortest paths, and the nodes in the path.
+    # The output is stored as a dictionary of dictionaries.
+    # Output format: {source paper id: {target paper id: [path length, number of shortest paths, list of list of nodes where each list is a path]}}
+    # below method uses single source shortest path algorithm to record the path length, number of shortest paths and the nodes in the path.
+    
+
+    # Find all shortest path from source to destination
+    # Reference - https://www.geeksforgeeks.org/print-all-shortest-paths-between-given-source-and-destination-in-an-undirected-graph/
+    # Call below and store as {<source research paper id> : [<target research paper id> : [list of nodes in the path]]}}
+
+    # Code to calculate closeness centrality, betweenness centrality and pagerank for the cora dataset without using networkx library.
+# The CORA graph can be considered as undirected.
+# cora.cites format: <target research paper id> <source research paper id>
+# As research paper ids are not continuous, we will use adjacency list to represent the graph.
+# Graph visualization https://graphonline.ru/en/
+
+# From net example to find distance
+0-1
+0-2
+1-3
+1-4
+2-3
+3-5
+4-5
+
+# From book to calculate centrality
+a-b
+b-c
+c-d
+d-e
+d-h
+e-h
+e-g
+e-f
+f-g
+g-h
+
+# From ppt to calculate centrality
+b-a
+c-b
+d-b
+e-c
+e-d
+
+# From PPT for page rank
+y-y
+a-y
+y-a
+m-a
+a-m
