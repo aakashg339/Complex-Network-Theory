@@ -270,7 +270,7 @@ class CentralityMeasuresAndPageRank:
             newPageRank = matrixM.dot(pageRank)
 
             # Check for convergence
-            if ((newPageRank - pageRank).abs() < epsilon).all().all():
+            if ((newPageRank - pageRank).abs() < epsilon).all():
                 print(f"Converged at iteration {i}")
                 break
 
@@ -321,5 +321,9 @@ if __name__ == "__main__":
     
     print("Creation of shortest path list done")
     centralityMeasuresAndPageRank.closenessCentralityMeasure()
-    centralityMeasuresAndPageRank.betweennessCentralityMeasure()
+    # centralityMeasuresAndPageRank.betweennessCentralityMeasure()
     centralityMeasuresAndPageRank.pageRank()
+    
+
+
+        
