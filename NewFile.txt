@@ -1,0 +1,7 @@
+Hello everyone,
+
+We are getting few queries regarding what would be the scenario for the closeness centrality or pagerank in case you encounter a node with zero outdegree. There can be few possible ways to tackle this. But for the purpose of this assignment follow the below rule in case you encounter nodes with zero outdegree:
+
+Let's say, node A and B are connected => "A->B" and the node B has no outdegree. In this particular case, try to assume that there is an edge from node B to node A (i.e., "B->A"). So both of the nodes A and B will have an outdegree of 1.
+
+Also, you are not allowed to use any graph related library functions such as networkx.

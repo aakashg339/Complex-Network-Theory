@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import os
 from collections import deque
 from sys import maxsize
+import networkx as nx
 
 
 class CentralityMeasuresAndPageRank:
@@ -301,16 +302,36 @@ if __name__ == "__main__":
     centralityMeasuresAndPageRank = CentralityMeasuresAndPageRank(dataFilePath)
     centralityMeasuresAndPageRank.readData()
     centralityMeasuresAndPageRank.createAdjacencyList()
-    # Calling using different source
-    for node in centralityMeasuresAndPageRank.vertexList:
-        # print("Shortest paths from source " + str(node) + ":\n")
-        centralityMeasuresAndPageRank.shortestPathsFromSourceToDestination(node)
-        # print()
+    # # Calling using different source
+    # for node in centralityMeasuresAndPageRank.vertexList:
+    #     # print("Shortest paths from source " + str(node) + ":\n")
+    #     centralityMeasuresAndPageRank.shortestPathsFromSourceToDestination(node)
+    #     # print()
     # print(centralityMeasuresAndPageRank.allPairPathsData)
     # centralityMeasuresAndPageRank.closenessCentralityMeasure()
+
+    # use networkx to calculate closeness centrality. The graph is directed graph and syntax = destination\tsource. It is created using self.adjacencyList
+    G = nx.DiGraph()
+    for source in centralityMeasuresAndPageRank.adjacencyList:
+        for destination in centralityMeasuresAndPageRank.adjacencyList[source]:
+            G.add_edge(source, destination)
+
+    # Display the graph
+    # Print the first edge in the graph
+    edges_list = list(G.edges())
+    print(edges_list[0])
+    # reverse the graph
+    G = G.reverse()
+    edges_list = list(G.edges())
+    print(edges_list[0])
+
+    # print centrality measure
+    closeness_centrality = nx.closeness_centrality(G.reverse())
+    print(closeness_centrality)
+
     # centralityMeasuresAndPageRank.betweennessCentralityMeasure()
-    centralityMeasuresAndPageRank.degreeOfNode()
-    centralityMeasuresAndPageRank.pageRank()
+    # centralityMeasuresAndPageRank.degreeOfNode()
+    # centralityMeasuresAndPageRank.pageRank()
     
 
 
