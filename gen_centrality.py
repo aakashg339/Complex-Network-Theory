@@ -194,7 +194,6 @@ class CentralityMeasuresAndPageRank:
                     self.closenessCentrality[node] += self.allPairPathsData[node][destination]['pathLength']
                 else:
                     self.closenessCentrality[node] += self.numberOfNodes
-                    print(f"Node {node} is not reachable from {destination}" + "\n" + "Path details is " + str(self.allPairPathsData[node][destination]))
             if self.closenessCentrality[node] != 0:
                 self.closenessCentrality[node] = (self.numberOfNodes - 1) / self.closenessCentrality[node]
         
