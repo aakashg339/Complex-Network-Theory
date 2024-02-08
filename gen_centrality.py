@@ -185,12 +185,16 @@ class CentralityMeasuresAndPageRank:
                         
     # Function to find the closeness centrality of the nodes
     def closenessCentralityMeasure(self):
+        # If a node is not reachable from the source then take a very large value as the path length, to signify that the node is not reachable
         self.closenessCentrality = {}
         for node in self.vertexList:
             self.closenessCentrality[node] = 0
             for destination in self.allPairPathsData[node]:
                 if self.allPairPathsData[node][destination]['pathLength'] != -1:
                     self.closenessCentrality[node] += self.allPairPathsData[node][destination]['pathLength']
+                else:
+                    self.closenessCentrality[node] += self.numberOfNodes
+                    print(f"Node {node} is not reachable from {destination}" + "\n" + "Path details is " + str(self.allPairPathsData[node][destination]))
             if self.closenessCentrality[node] != 0:
                 self.closenessCentrality[node] = (self.numberOfNodes - 1) / self.closenessCentrality[node]
         
@@ -200,23 +204,23 @@ class CentralityMeasuresAndPageRank:
 
     def betweennessCentralityMeasure(self):
         self.betweennessCentrality = {}
-        pairsCompleted = []
         for node in self.vertexList:
-            pairsCompleted = set()
+            # pairsCompleted = set()
             self.betweennessCentrality[node] = 0
             for source in self.vertexList:
                 if source == node:
                     continue
                 for destination in self.allPairPathsData[source]:
-                    if destination == node or (source, destination) in pairsCompleted or self.allPairPathsData[source][destination]['pathLength'] == -1:
+                    # if destination == node or (source, destination) in pairsCompleted or self.allPairPathsData[source][destination]['pathLength'] == -1:
+                    if destination == node or self.allPairPathsData[source][destination]['pathLength'] == -1:
                         continue
                     shortestPathsIncludingNode = 0
                     for path in self.allPairPathsData[source][destination]['paths']:
                         if node in path:
                             shortestPathsIncludingNode += 1
                     self.betweennessCentrality[node] += shortestPathsIncludingNode / self.allPairPathsData[source][destination]['numberOfPaths']
-                    pairsCompleted.add((source, destination))
-                    pairsCompleted.add((destination, source))
+                    # pairsCompleted.add((source, destination))
+                    # pairsCompleted.add((destination, source))
             print("Betweenness centrality for node " + str(node) + " is " + str(self.betweennessCentrality[node]))
 
         # Normalize the betweenness centrality
@@ -264,8 +268,9 @@ class CentralityMeasuresAndPageRank:
         pageRank = initialPageRank.copy()
 
         # power iteration method
-        epsilon = 1e-6  # Set a small threshold for convergence
-        for i in range(1, 21):
+        # Set a threshold as 0.000001
+        epsilon = 0.000001
+        for i in range(1, 101):
             # print("Iteration " + str(i))
             newPageRank = matrixM.dot(pageRank)
 
@@ -277,9 +282,9 @@ class CentralityMeasuresAndPageRank:
             pageRank = newPageRank
 
         # Scaling the page rank values
-        maxPageRank = pageRank['pageRank'].max()
-        minPageRank = pageRank['pageRank'].min()
-        pageRank['pageRank'] = (pageRank['pageRank'] - minPageRank) / (maxPageRank - minPageRank)
+        # maxPageRank = pageRank['pageRank'].max()
+        # minPageRank = pageRank['pageRank'].min()
+        # pageRank['pageRank'] = (pageRank['pageRank'] - minPageRank) / (maxPageRank - minPageRank)
         
         # print(pageRank)
         
@@ -316,7 +321,6 @@ if __name__ == "__main__":
     print("Preprocessing done")
     # Calling using different source
     for node in centralityMeasuresAndPageRank.vertexList:
-        # print("Shortest paths from source " + str(node) + ":\n")
         centralityMeasuresAndPageRank.shortestPathsFromSourceToDestination(node)
     
     print("Creation of shortest path list done")
