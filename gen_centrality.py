@@ -6,6 +6,7 @@ from sys import maxsize
 
 
 class CentralityMeasuresAndPageRank:
+
     def __init__(self, currentDirectoryPath):
         self.dataFilePath = os.path.join(currentDirectoryPath, "cora")
         self.outputFilePath = os.path.join(currentDirectoryPath, "centralities")
@@ -220,7 +221,7 @@ class CentralityMeasuresAndPageRank:
                     self.betweennessCentrality[node] += shortestPathsIncludingNode / self.allPairPathsData[source][destination]['numberOfPaths']
                     # pairsCompleted.add((source, destination))
                     # pairsCompleted.add((destination, source))
-            print("Betweenness centrality for node " + str(node) + " is " + str(self.betweennessCentrality[node]))
+            # print("Betweenness centrality for node " + str(node) + " is " + str(self.betweennessCentrality[node]))
 
         # Normalize the betweenness centrality
         for node in self.betweennessCentrality:
@@ -269,7 +270,7 @@ class CentralityMeasuresAndPageRank:
         # power iteration method
         # Set a threshold as 0.000001
         epsilon = 0.000001
-        for i in range(1, 101):
+        for i in range(1, 51):
             # print("Iteration " + str(i))
             newPageRank = matrixM.dot(pageRank)
 
