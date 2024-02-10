@@ -24,10 +24,15 @@ class CentralityMeasuresAndPageRank:
     # Reading the data from the file
     def readData(self):
         # Getting the edge list
-        self.edgelist = pd.read_csv(os.path.join(self.dataFilePath, "cora.cites"), sep='\t', header=None, names=["target", "source"])
+        try:
+            self.edgelist = pd.read_csv(os.path.join(self.dataFilePath, "cora.cites"), sep='\t', header=None, names=["target", "source"])
+        except FileNotFoundError:
+            print("File not found. Kindly insert the cora.cites in folder cora. Exiting the program.")
+            exit(1)
         assert self.edgelist.shape[1] == 2, "The number of columns in the edgelist is not 2"
         assert self.edgelist.shape[0] == 5429, "The number of rows in the edgelist is not 5429"
     
+    # Function to add the edge to the incoming edges
     def addEdgeToIncomingEdges(self, source, target):
         if target not in self.incommingEdges:
             self.incommingEdges[target] = [source]
@@ -48,14 +53,22 @@ class CentralityMeasuresAndPageRank:
                 self.vertexList.append(row["source"])
             if row["target"] not in self.vertexList:
                 self.vertexList.append(row["target"])
+
+        # Adding the nodes which are not in the adjecency list but present in vertex list
+        for node in self.vertexList:
+            if node not in self.adjacencyList:
+                self.adjacencyList[node] = []
         
         # Sort the adjacency list as per keys
         self.adjacencyList = dict(sorted(self.adjacencyList.items()))
         self.vertexList.sort()
         
+        assert list(self.adjacencyList.keys()) == self.vertexList, "The adjacency list and vertex list are not in the same order"
+        
         self.numberOfNodes = len(self.vertexList)
         assert self.numberOfNodes == 2708, "The number of nodes in the graph is not 2708"
 
+    # Function to calculate the degree of the nodes
     def degreeOfNode(self):
         for node in self.vertexList:
             if node in self.adjacencyList:
@@ -73,90 +86,76 @@ class CentralityMeasuresAndPageRank:
     # Function to adjust the graph for nodes with no outgoing edges
     def adjustGraphForNodesWithNoOutgoingEdges(self):
         for node in self.vertexList:
-            if node not in self.adjacencyList:
+            if len(self.adjacencyList[node]) == 0:
                 # For every edge coming to the node, add the node to the adjacency list
-                self.adjacencyList[node] = []
+                #self.adjacencyList[node] = []
                 for source in self.incommingEdges[node]:
                     self.adjacencyList[node].append(source)
 
-    # Function which finds all the paths
-    # and stores it in paths array
-    def find_paths(self, paths, path, parent, u):
-        # Base Case
-        if (u == -1):
-            paths.append(path.copy())
+    # Function to finds all the paths from source to destination
+    def findPathsSourceToDestination(self, pathList, path, parentDict, currentNode):
+        # When we reach destination, we insert the path in pathList
+        if (currentNode == -1):
+            pathList.append(path.copy())
             return
 
-        # Loop for all the parents
-        # of the given vertex
-        for par in parent[u]:
+        # Loop for all the parents of the given vertex, to find all the paths
+        for parentU in parentDict[currentNode]:
 
-            # Insert the current
-            # vertex in path
-            path.append(u)
+            path.append(currentNode)
 
-            # Recursive call for its parent
-            self.find_paths(paths, path, parent, par)
+            self.findPathsSourceToDestination(pathList, path, parentDict, parentU)
 
-            # Remove the current vertex
+            # Removing current vertex to back track
             path.pop()
 
-    # Function which performs bfs
-    # from the given source vertex
-    def bfs(self, parent, start):
+    # Function to run bfs and find the shortest paths from source to destination
+    def bfs(self, parentDict, startNode):
 
-        # dist will contain shortest distance
-        # from start to every other vertex
-        dist = {}
+        # Dictionary to store the distance of each node from the source
+        distanceMap = {}
 
         for node in self.vertexList:
-            dist[node] = maxsize
+            distanceMap[node] = maxsize
 
         q = deque()
 
-        # Insert source vertex in queue and make
-        # its parent -1 and distance 0
-        q.append(start)
-        parent[start] = [-1]
-        dist[start] = 0
+        q.append(startNode)
+        parentDict[startNode] = [-1]
+        distanceMap[startNode] = 0
 
-        # Until Queue is empty
+        # Looping until queue is empty
         while q:
-            u = q[0]
+            currentNode = q[0]
             q.popleft()
-            if u in self.adjacencyList:
-                for v in self.adjacencyList[u]:
-                    if (dist[v] > dist[u] + 1):
+            if currentNode in self.adjacencyList:
+                for adjNode in self.adjacencyList[currentNode]:
+                    if (distanceMap[adjNode] > distanceMap[currentNode] + 1):
+                        # As a shorter path is found, update the distance and add the node to the queue
+                        distanceMap[adjNode] = distanceMap[currentNode] + 1
+                        q.append(adjNode)
+                        parentDict[adjNode].clear()
+                        parentDict[adjNode].append(currentNode)
 
-                        # A shorter distance is found
-                        # So erase all the previous parents
-                        # and insert new parent u in parent[v]
-                        dist[v] = dist[u] + 1
-                        q.append(v)
-                        parent[v].clear()
-                        parent[v].append(u)
-
-                    elif (dist[v] == dist[u] + 1):
-
-                        # Another candidate parent for
-                        # shortes path found
-                        parent[v].append(u)
+                    elif (distanceMap[adjNode] == distanceMap[currentNode] + 1):
+                        # Another path of the same length is found
+                        parentDict[adjNode].append(currentNode)
     
     # Function to find all the shortest paths from source to destination
     def shortestPathsFromSourceToDestination(self, source):
         # List to store the paths
-        parent = {}
+        parentDict = {}
 
         for node in self.vertexList:
-            parent[node] = []
+            parentDict[node] = []
 
         # Function call to bfs
-        self.bfs(parent, source)
+        self.bfs(parentDict, source)
 
         # Considering all nodes except itself
         for node in self.vertexList:
             
-            paths = []
+            pathList = []
             path = []
 
             if node == source:
@@ -168,21 +167,15 @@ class CentralityMeasuresAndPageRank:
                                                   'pathLength': -1,
                                                   'paths':  []}
 
-            # Function call to find_paths
-            self.find_paths(paths, path, parent, node)
-            for v in paths:
-                # Since paths contain each
-                # path in reverse order,
-                # so reverse it
-                v = v[::-1]
-                # Print node for the current path
-                # for u in v:
-                #     print(u, end = " ")
-                # print()
+            # Function call to findPathsSourceToDestination
+            self.findPathsSourceToDestination(pathList, path, parentDict, node)
+            for eachPath in pathList:
+                # Reversing the path to get the correct path
+                eachPath = eachPath[::-1]
 
                 self.allPairPathsData[source][node]['numberOfPaths'] += 1
-                self.allPairPathsData[source][node]['pathLength'] = len(v) - 1
-                self.allPairPathsData[source][node]['paths'].append(v.copy())
+                self.allPairPathsData[source][node]['pathLength'] = len(eachPath) - 1
+                self.allPairPathsData[source][node]['paths'].append(eachPath.copy())
                         
     # Function to find the closeness centrality of the nodes
     def closenessCentralityMeasure(self):
@@ -262,7 +255,7 @@ class CentralityMeasuresAndPageRank:
         initialPageRank.fillna(1 / self.numberOfNodes, inplace=True)
         initialPageRank = initialPageRank.round(6)
 
-        # page rank.
+        # To store the calculated page rank
         pageRank = pd.DataFrame(index=self.vertexList, columns=['pageRank'])
         pageRank.fillna(0, inplace=True)
         pageRank = initialPageRank.copy()
