@@ -1,0 +1,7 @@
+node2Vec
+https://github.com/eliorc/node2vec/blob/master/node2vec/node2vec.py
+GCN
+https://github.com/andrejmiscic/gcn-pytorch
+https://github.com/tkipf/gcn
+
+Deadline - 31 March
