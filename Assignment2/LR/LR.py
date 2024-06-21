@@ -1,4 +1,7 @@
 # Implementing Node2Vec algorithm from scratch and using Logistic Regression to classify the nodes
+# Reference 1 - https://github.com/ainimesh/Graph-Machine-Learning-IITKGP/blob/main/Node2Vec.ipynb
+# Reference 2 - https://arxiv.org/abs/1607.00653
+# Reference 3 - https://www.youtube.com/watch?v=eUeCXMpyJK4
 
 import numpy as np
 import pandas as pd
@@ -22,8 +25,12 @@ class Node2VecAndLogisticRegression:
         self.vertexList = []
         self.evaluationMetricFileName = 'lr_metrics.txt'
 
-    # Reading the data from the file
-    def readData(self):
+    ########################################################
+    # Reading the data
+    ########################################################
+
+    # Reading the edge list from the file
+    def readEdgeList(self):
         # Getting the edge list
         try:
             # Reading both the train and test data
@@ -36,13 +43,24 @@ class Node2VecAndLogisticRegression:
             exit(1)
         assert self.edgelist.shape[1] == 2, "The number of columns in the edgelist is not 2"
         assert self.edgelist.shape[0] == (4343 + 1086), "The number of rows in the edgelist is not 5429"
+
+    # Reading the content file
+    def readContentFile(self):
+        try:
+            self.coraContent = pd.read_csv(self.coraContentFilePath, sep='\t', header=None)
+        except FileNotFoundError:
+            print("File not found. Kindly insert the cora.content in folder dataset. Exiting the program.")
+            exit(1)
+        assert self.coraContent.shape[1] == 1435, "The number of columns in the content file is not 1435"
+        assert self.coraContent.shape[0] == 2708, "The number of rows in the content file is not 2708"
+
+    # Reading the data
+    def readData(self):
+        self.readEdgeList()
+        self.readContentFile()
     
-    # Function to add the edge to the incoming edges
-    def buildEdgeList(self):
-        self.edgelist = pd.concat([self.edgelist, pd.DataFrame(columns=['incomingEdges'])], axis=1)
-    
-    # Creating the graph as adjacency list
-    def createAdjacencyList(self):
+    # Creating the graph as adjacency list and creating the vertex list. Adjacency list is for directed graph
+    def createAdjacencyListAndVertexList(self):
         for index, row in self.edgelist.iterrows():
             if row["source"] not in self.adjacencyList:
                 self.adjacencyList[row["source"]] = [row["target"]]
@@ -69,10 +87,14 @@ class Node2VecAndLogisticRegression:
         self.numberOfNodes = len(self.vertexList)
         assert self.numberOfNodes == 2708, "The number of nodes in the graph is not 2708"
 
-    # Creating the graph
-    def createGraph(self):
-        self.buildEdgeList()
-        self.createAdjacencyList()
+    # Creating the node label map
+    def createNodeLabelMap(self):
+        for index, row in self.coraContent.iterrows():
+            self.nodeLabelMap[row[0]] = row[1434]
+    
+    ########################################################
+    # Helper functions to work with graphs
+    ########################################################
 
     # Helper function to get common neighbors
     def getCommonNeighbors(self, sourceNode, destinationNode):
@@ -90,21 +112,10 @@ class Node2VecAndLogisticRegression:
         if destinationNode in self.adjacencyList[sourceNode]:
             return True
         return False
-    
-    # Reading the content file
-    def readContentFile(self):
-        try:
-            self.coraContent = pd.read_csv(self.coraContentFilePath, sep='\t', header=None)
-        except FileNotFoundError:
-            print("File not found. Kindly insert the cora.content in folder dataset. Exiting the program.")
-            exit(1)
-        assert self.coraContent.shape[1] == 1435, "The number of columns in the content file is not 1435"
-        assert self.coraContent.shape[0] == 2708, "The number of rows in the content file is not 2708"
 
-    # Creating the node label map
-    def createNodeLabelMap(self):
-        for index, row in self.coraContent.iterrows():
-            self.nodeLabelMap[row[0]] = row[1434]
+    ########################################################
+    # Functions related to probability calculation
+    ########################################################
 
     # Initializing the probabilities dictionary
     def initializeProbabilities(self):
@@ -118,10 +129,10 @@ class Node2VecAndLogisticRegression:
 
     # Helper function to get the probablity value
     def getProbalityValue(self, sourceNode, destinationNode, p, q):
-        if self.hasEdge(sourceNode, destinationNode) or self.hasEdge(destinationNode, sourceNode):
-            return 1
-        elif self.getCommonNeighbors(sourceNode, destinationNode):
+        if sourceNode == destinationNode:
             return 1/p
+        elif self.hasEdge(sourceNode, destinationNode):
+            return 1
         else:
             return 1/q
     
@@ -135,65 +146,52 @@ class Node2VecAndLogisticRegression:
                 probabilities[sourceNode]['probability'][currentNode] = probablity / np.sum(probablity)
         return probabilities
     
-    # Helper function for random walk
-    def randomWalk(self, probabilities, walkLength, walk):
-        for j in range(walkLength):
-            currentNode = walk[-1]
-            if len(walk) > 1:
-                previousNode = walk[-2]
-            else:
-                previousNode = None
-            
-            if len(self.adjacencyList[currentNode]) == 0:
-                break
-
-            if len(walk) == 1:
-                nextNode = np.random.choice(self.adjacencyList[currentNode])
-            else:
-                probablities = probabilities[previousNode]['probability'][currentNode]
-                nextNode = np.random.choice(self.adjacencyList[currentNode], p=probablities)
-
-            walk.append(nextNode)
-
-        return walk
+    ########################################################
+    # Functions related to random walk
+    ########################################################
 
     # Making random walks
-    def randomWalks(self, probabilities, walkLength):
+    def randomWalks(self, prob, maxWalks, walkLength):
         randonWalks = []
-        for node in self.vertexList:
-            for i in range(walkLength):
-                walk = [node]
-                walk = self.randomWalk(probabilities, walkLength, walk)
+        for startNode in self.vertexList:
+            for i in range(maxWalks):
+                walk = [startNode]
+                walkOptions = list(self.adjacencyList[startNode])
+                if len(walkOptions) == 0:
+                    break
+                firstStep = np.random.choice(walkOptions)
+                walk.append(firstStep)
+
+                for k in range(walkLength - 2):
+                    walkOptions = list(self.adjacencyList[walk[-1]])
+                    if len(walkOptions) == 0:
+                        break
+                    probabilities = prob[walk[-2]]['probability'][walk[-1]]
+                    nextStep = np.random.choice(walkOptions, p=probabilities)
+                    walk.append(nextStep)
+
                 randonWalks.append(walk)
+        np.random.shuffle(randonWalks)
+        
+        for walk in randonWalks:
+            for i in range(len(walk)):
+                walk[i] = str(walk[i])
+
         return randonWalks
     
-    # Generating probabilities for the nodes
-    def generateProbabilities(self, p, q):
-        probabilities = self.initializeProbabilities()
-        probabilities = self.getProbablities(p, q, probabilities)
-        return probabilities
-    
-    # Getting random walks
-    def getRandomWalks(self, probabilities, walkLength):
-        walks = self.randomWalks(probabilities, walkLength)
-        return walks
+    ########################################################
+    # Functions related to Node2Vec
+    ########################################################
     
     # creating Node2Vec model
     def createNode2VecModel(self, walks, dimensions, windowSize, iterations):
         model = Word2Vec(sentences=walks, vector_size=dimensions, window=windowSize, min_count=0, sg=1, workers=4, epochs=iterations)
         return model.wv
     
-    # Generate and get the embeddings
-    def generateAndGetEmbeddings(self, p, q, walkLength, dimensions, windowSize, iterations):
-        probabilities = self.generateProbabilities(p, q)
-        walks = self.getRandomWalks(probabilities, walkLength)
-        assert len(walks) == 2708 * walkLength, "The number of walks is not 2708 * " + str(walkLength)
+    ########################################################
+    # Functions related to Logistic Regression
+    ########################################################
 
-        embeddings = self.createNode2VecModel(walks, dimensions, windowSize, iterations)
-        assert len(embeddings) == 2708, "The number of embeddings is not 2708"
-
-        return embeddings
-    
     # Preparing data for logistic regression
     def prepareDataForLogisticRegression(self, embeddings):
         # Train data is the cora_train.cites and test data is the cora_test.cites
@@ -216,10 +214,10 @@ class Node2VecAndLogisticRegression:
         testVectors = []
 
         for node in trainData:
-            trainVectors.append(embeddings[node])
+            trainVectors.append(embeddings[str(node)])
 
         for node in testData:
-            testVectors.append(embeddings[node])
+            testVectors.append(embeddings[str(node)])
 
         return trainVectors, trainLabels, testVectors, testLabels
     
@@ -288,26 +286,57 @@ class Node2VecAndLogisticRegression:
             file.write("F1: " + str(f1) + "\n")
             file.write("Confusion Matrix: \n" + str(confusionMatrix) + "\n")
 
-    # driver function
-    def driverFunction(self):
-        p = 1
-        q = 1
+    ########################################################
+    # Driver functions
+    ########################################################
+
+    # Function to prepare data
+    def prepareData(self):
+        self.readData()
+        self.createAdjacencyListAndVertexList()
+        self.createNodeLabelMap()
+
+    # Function to run Node2Vec
+    def runNode2Vec(self):
+        p = 0.5
+        q = 0.5
+        maxWalks = 40
         walkLength = 100
         dimensions = 128
         windowSize = 10
         iterations = 10
 
-        self.readData()
-        self.createGraph()
-        self.readContentFile()
-        self.createNodeLabelMap()
+        # Generate probabilities
+        probabilities = self.initializeProbabilities()
+        probabilities = self.getProbablities(p, q, probabilities)
+        assert len(probabilities) == 2708, "The number of probabilities is not 2708"
 
-        embeddings = self.generateAndGetEmbeddings(p, q, walkLength, dimensions, windowSize, iterations)
-        print("Embeddings generated")
+        # Generate random walks
+        randomWalks = self.randomWalks(probabilities, maxWalks, walkLength)
+        # assert len(walks) == self.vertexList * maxWalk, "The number of walks is not "+str(len(self.vertexList))+" * " + str(maxWalk) + ". It is " + str(len(walks)) + " instead."
+
+        # Generate and get the embeddings
+        embeddings = self.createNode2VecModel(randomWalks, dimensions, windowSize, iterations)
+        # assert len(embeddings) == 2708, "The number of embeddings is not 2708"
+
+        return embeddings
+    
+    # Function to run the logistic regression
+    def runLogisticRegressionAndSaveMetrics(self, embeddings):
         trainVectors, trainLabels, testVectors, testLabels = self.prepareDataForLogisticRegression(embeddings)
         model = self.trainLR(trainVectors, trainLabels)
         accuracy, precision, recall, f1, confusionMatrix = self.testLR(model, testVectors, testLabels)
         self.saveEvaluationMetrics(accuracy, precision, recall, f1, confusionMatrix)
+
+    # driver function
+    def driverFunction(self):
+        self.prepareData()
+        print("Data prepared")
+
+        embeddings = self.runNode2Vec()
+        print("Embeddings generated")
+
+        self.runLogisticRegressionAndSaveMetrics(embeddings)
         print("Evaluation metrics saved")
 
 if __name__ == "__main__":
