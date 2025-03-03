@@ -1,3 +1,8 @@
+# Reference 1 - https://networkx.org/documentation/stable/reference/algorithms/centrality.html
+# Reference 2 - https://networkx.org/documentation/stable/reference/algorithms/link_analysis.html
+# https://www.graphable.ai/blog/closeness-centrality-algorithm/
+# Closeness centralities
+
 import numpy as np
 import pandas as pd
 import os
